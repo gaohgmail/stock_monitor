@@ -2,15 +2,16 @@ from pathlib import Path
 import os
 
 # ==================== 路径配置 ====================
-# 适配 GitHub 仓库路径
+# 使用相对路径，确保在 GitHub Actions 和 Streamlit Cloud 都能运行
 BASE_DIR = Path(__file__).parent.parent
 DATA_DIR = BASE_DIR / 'data' / 'raw'
-CONCEPT_PATH = BASE_DIR / 'metadata' / '所属概念.csv'
-CALENDAR_PATH = BASE_DIR / 'metadata' / '交易日历.csv'
+METADATA_DIR = BASE_DIR / 'metadata'
+CONCEPT_PATH = METADATA_DIR / '所属概念.csv'
+CALENDAR_PATH = METADATA_DIR / '交易日历.csv'
 SAVE_DIR = BASE_DIR / 'analysis_results'
 
-# 确保目录存在
-for d in [DATA_DIR, SAVE_DIR, BASE_DIR / 'metadata']:
+# 确保必要的目录存在
+for d in [DATA_DIR, SAVE_DIR, METADATA_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ==================== 业务配置 ====================
