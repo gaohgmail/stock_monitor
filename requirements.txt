@@ -3,3 +3,4 @@ easyquotation
 pywencai
 requests
 streamlit
+plotly
