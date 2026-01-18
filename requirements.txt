@@ -4,3 +4,4 @@ pywencai
 requests
 streamlit
 plotly
+matplotlib
