@@ -400,22 +400,29 @@ def check_password():
         return False
     else:
         return True
+
 import subprocess
-import os
+
 
 def run_data_download_script():
-    """执行早盘 9:25 的数据下载脚本"""
     try:
-        # 假设你的下载脚本叫 download_data.py
-        # 建议使用绝对路径，防止找不到文件
-        script_path = os.path.join(os.getcwd(), "main.py") #竞价收盘联合版，此处是main
+        # 获取当前文件的绝对路径，确保定位到 main.py
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(current_dir, "main.py")
         
-        # 执行脚本
-        result = subprocess.run(["python", script_path], capture_output=True, text=True)
+        # 【核心修改】：使用 sys.executable 而不是 "python"
+        # sys.executable 会直接指向当前已经装好 pandas 的那个 Python 解释器
+        result = subprocess.run(
+            [sys.executable, script_path], 
+            capture_output=True, 
+            text=True,
+            encoding='utf-8'
+        )
         
         if result.returncode == 0:
             return True, "数据更新成功！"
         else:
+            # 这里的 stderr 会捕捉到 main.py 内部的报错
             return False, f"更新失败: {result.stderr}"
     except Exception as e:
         return False, f"程序异常: {str(e)}"
@@ -497,6 +504,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
