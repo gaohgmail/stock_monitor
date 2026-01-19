@@ -71,7 +71,7 @@ def analyze_daily_sentiment(df_today: pd.DataFrame, prefix: str = "竞价"):
     }
     return {f"{prefix}_{k}": v for k, v in raw_stats.items()}
 
-@st.cache_data
+#@st.cache_data
 def get_sentiment_trend_report(date_list: list):
     """
     批量处理日期序列，生成趋势 DataFrame
@@ -504,6 +504,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
