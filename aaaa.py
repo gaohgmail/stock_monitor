@@ -459,7 +459,7 @@ if __name__ == "__main__":
                 "选择看板显示日期", 
                 value=max_date,  # 默认显示最新一天
                 min_value=min_date,
-                max_value=max_date
+                #max_value=max_date
             )
             # 转回字符串用于数据定位
             target_date_str = target_date.strftime('%Y-%m-%d')
@@ -504,6 +504,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
