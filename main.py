@@ -120,12 +120,17 @@ EN2CN = {
 # ==================== 2. 工具函数 ====================
 
 def is_save_time():
-    if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
-        print("💡 检测到手动触发运行，将强制保存数据...")
+    # 1. 检查是否为 GitHub Actions 环境中的手动或外部触发
+    event_name = os.environ.get("GITHUB_EVENT_NAME")
+    
+    # workflow_dispatch 是你在 GitHub 页面点运行
+    # repository_dispatch 是你从 Streamlit 按钮点运行
+    if event_name in ["workflow_dispatch", "repository_dispatch"]:
+        print(f"💡 检测到触发源为 {event_name}，将强制保存数据...")
         return True
         
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).time()
-    morning = datetime.time(9, 20) <= now <= datetime.time(9, 45)
+    morning = datetime.time(9, 25) <= now <= datetime.time(9, 30)
     afternoon = datetime.time(15, 0) <= now <= datetime.time(16, 0)
     return morning or afternoon
 
