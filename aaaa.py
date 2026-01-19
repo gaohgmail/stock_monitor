@@ -497,7 +497,7 @@ if __name__ == "__main__":
 
             st.markdown("---")
             # --- 侧边栏按钮逻辑 ---（取代本地抓取逻辑的，函数名不同）
-            if st.button("🚀 抓取今日 9:25 数据"):
+            if st.button("🚀 抓取今日 9:25 数据", use_container_width=True):
                 with st.spinner("正在通知 GitHub 机器人..."):
                     # 调用你的触发函数
                     success = trigger_github_action() 
@@ -533,6 +533,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
