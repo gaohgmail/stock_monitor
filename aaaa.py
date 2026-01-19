@@ -28,110 +28,110 @@ from modules.analyzer import build_structure_tags, analyze_auction_flow
 
 # --- 2. 核心逻辑函数 ---
 
-def analyze_daily_sentiment(df_today: pd.DataFrame, prefix: str = "竞价"):
+def fast_daily_calc(df: pd.DataFrame, prefix: str):
     """
-    通用计算逻辑：支持竞价和收盘数据的动态切换
+    使用 NumPy 向量化提速计算
     """
-    if df_today.empty: 
-        return {}
+    if df.empty: return {}
 
-    # 定义动态列名
+    # 获取标准列名
     amt_col = f"{prefix}金额"
     price_col = f"{prefix}价"
+    chg_col = '涨跌幅'
+    name_col = '股票简称'
+    code_col = '股票代码'
 
-    # 1. 基础金额统计 (亿元)
-    total_amt = df_today[amt_col].sum() / 1e8
-    sh_amt = df_today[df_today['股票代码'].str.startswith('sh6')][amt_col].sum() / 1e8
-    cyb_amt = df_today[df_today['股票代码'].str.startswith('sz3')][amt_col].sum() / 1e8
+    # 预检查必需列，防止报错
+    required = [amt_col, price_col, chg_col, name_col, code_col, '涨停价', '跌停价']
+    if not all(c in df.columns for c in required): return {}
 
-    # 2. 情绪指标统计 (过滤 ST)
-    mask_not_st = ~df_today['股票简称'].str.contains('ST|st', na=False)
-    t = df_today[mask_not_st].copy()
-    t_sh = t[t['股票代码'].str.startswith('sh6')]
-    t_cyb = t[t['股票代码'].str.startswith('sz3')]
+    # 转为 NumPy 数组提升性能
+    codes = df[code_col].values.astype(str)
+    amts = df[amt_col].values
+    chgs = df[chg_col].values
+    names = df[name_col].values.astype(str)
+    prices = df[price_col].values
+    limit_up_prices = df['涨停价'].values
+    limit_down_prices = df['跌停价'].values
 
-    # 3. 涨跌停判定
-    is_limit_up = (t[price_col] > 0) & (abs(t[price_col] - t['涨停价']) < 0.01)
-    is_limit_down = (t[price_col] > 0) & (abs(t[price_col] - t['跌停价']) < 0.01)
+    # 构造常用布尔掩码
+    mask_sh = np.char.startswith(codes, 'sh6')
+    mask_cyb = np.char.startswith(codes, 'sz3')
+    mask_not_st = ~np.char.find(np.char.lower(names), 'st') != -1
+    
+    # 核心统计计算
+    total_amt = np.sum(amts) / 1e8
+    sh_amt = np.sum(amts[mask_sh]) / 1e8
+    cyb_amt = np.sum(amts[mask_cyb]) / 1e8
 
-    # 4. 构建结果字典
+    # 情绪指标计数 (在 not_st 掩码下计算)
+    m_valid = mask_not_st
+    m_sh_valid = mask_not_st & mask_sh
+    m_cyb_valid = mask_not_st & mask_cyb
+
     raw_stats = {
         '总额': total_amt,
         '上海额': sh_amt,
         '创业额': cyb_amt,
-        '强力': (t['涨跌幅'] >= 7).sum(),
-        '极弱': (t['涨跌幅'] <= -7).sum(),
-        '涨停': is_limit_up.sum(),
-        '跌停': is_limit_down.sum(),
-        '上涨数': (t['涨跌幅'] > 0).sum(),
-        '下跌数': (t['涨跌幅'] < 0).sum(),
-        '沪涨': (t_sh['涨跌幅'] > 0).sum(),
-        '沪跌': (t_sh['涨跌幅'] < 0).sum(),
-        '创涨': (t_cyb['涨跌幅'] > 0).sum(),
-        '创跌': (t_cyb['涨跌幅'] < 0).sum()
+        '强力': np.sum((chgs >= 7) & m_valid),
+        '极弱': np.sum((chgs <= -7) & m_valid),
+        '涨停': np.sum((prices > 0) & (np.abs(prices - limit_up_prices) < 0.01) & m_valid),
+        '跌停': np.sum((prices > 0) & (np.abs(prices - limit_down_prices) < 0.01) & m_valid),
+        '上涨数': np.sum((chgs > 0) & m_valid),
+        '下跌数': np.sum((chgs < 0) & m_valid),
+        '沪涨': np.sum((chgs > 0) & m_sh_valid),
+        '沪跌': np.sum((chgs < 0) & m_sh_valid),
+        '创涨': np.sum((chgs > 0) & m_cyb_valid),
+        '创跌': np.sum((chgs < 0) & m_cyb_valid)
     }
     return {f"{prefix}_{k}": v for k, v in raw_stats.items()}
 
-#@st.cache_data
-@st.cache_data(ttl=20000)
-def get_sentiment_trend_report(date_list: list):
-    """
-    批量处理日期序列，生成趋势 DataFrame
-    """
-    daily_results = []
-    for d in date_list:
+def process_single_date(d):
+    """单日处理单元"""
+    try:
         df_jj = read_market_data(d, '竞价行情')
         df_sp = read_market_data(d, '收盘行情')
+        if df_jj.empty and df_sp.empty: return None
         
-        if df_jj.empty and df_sp.empty: 
-            continue
+        res_jj = fast_daily_calc(df_jj, prefix="竞价")
+        res_sp = fast_daily_calc(df_sp, prefix="收盘")
         
-        res_jj = analyze_daily_sentiment(df_jj, prefix="竞价") if not df_jj.empty else {}
-        res_sp = analyze_daily_sentiment(df_sp, prefix="收盘") if not df_sp.empty else {}
-        
-        combined = {'日期': d.strftime('%Y-%m-%d')}
+        combined = {'日期': d.strftime('%Y-%m-%d'), '_raw_date': d}
         combined.update(res_jj)
         combined.update(res_sp)
-        daily_results.append(combined)
+        return combined
+    except Exception: return None
 
-    trend_df = pd.DataFrame(daily_results)
-    if trend_df.empty: 
-        return trend_df
+def get_sentiment_trend_report(date_list: list):
+    """生成趋势表，补全所有 49 列指标"""
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        results = [r for r in executor.map(process_single_date, date_list) if r is not None]
     
-    trend_df = trend_df.sort_values('日期') 
+    if not results: return pd.DataFrame()
+    
+    trend_df = pd.DataFrame(results).sort_values('_raw_date')
 
-    # 衍生成交额与涨跌比
+    # 批量计算衍生指标（确保竞价/收盘各 24 列）
     for p in ['竞价', '收盘']:
-        main_col = f'{p}_总额'
-        if main_col not in trend_df.columns:
-            continue
-            
-        trend_df[f'{p}_资金增减'] = trend_df[main_col].diff()
-        trend_df[f'{p}_增减幅'] = trend_df[main_col].pct_change()
-        
-        if f'{p}_上海额' in trend_df.columns:
-            trend_df[f'{p}_上海差值'] = trend_df[f'{p}_上海额'].diff()
-        if f'{p}_创业额' in trend_df.columns:
-            trend_df[f'{p}_创业差值'] = trend_df[f'{p}_创业额'].diff()
+        # 1. 资金维度 (4列)
+        trend_df[f'{p}_资金增减'] = trend_df[f'{p}_总额'].diff()
+        trend_df[f'{p}_增减幅'] = trend_df[f'{p}_总额'].pct_change()
+        trend_df[f'{p}_上海差值'] = trend_df[f'{p}_上海额'].diff()   # 之前漏掉的
+        trend_df[f'{p}_创业差值'] = trend_df[f'{p}_创业额'].diff()   # 之前漏掉的
 
-        if f'{p}_上涨数' in trend_df.columns:
-            trend_df[f'{p}_全场涨跌比'] = trend_df[f'{p}_上涨数'] / trend_df[f'{p}_下跌数'].replace(0, 1)
-        if f'{p}_沪涨' in trend_df.columns:
-            trend_df[f'{p}_上海涨跌比'] = trend_df[f'{p}_沪涨'] / trend_df[f'{p}_沪跌'].replace(0, 1)
-        if f'{p}_创涨' in trend_df.columns:
-            trend_df[f'{p}_创业涨跌比'] = trend_df[f'{p}_创涨'] / trend_df[f'{p}_创跌'].replace(0, 1)
+        # 2. 涨跌比维度 (3列)
+        trend_df[f'{p}_全场涨跌比'] = trend_df[f'{p}_上涨数'] / trend_df[f'{p}_下跌数'].replace(0, 1)
+        trend_df[f'{p}_上海涨跌比'] = trend_df[f'{p}_沪涨'] / trend_df[f'{p}_沪跌'].replace(0, 1) # 之前漏掉的
+        trend_df[f'{p}_创业涨跌比'] = trend_df[f'{p}_创涨'] / trend_df[f'{p}_创跌'].replace(0, 1) # 之前漏掉的
 
-        # 新增：涨跌停与强弱每日差值（用于界面下标/Delta 显示）
-        if f'{p}_涨停' in trend_df.columns:
-            trend_df[f'{p}_涨停_diff'] = trend_df[f'{p}_涨停'].diff().fillna(0).astype(int)
-        if f'{p}_跌停' in trend_df.columns:
-            trend_df[f'{p}_跌停_diff'] = trend_df[f'{p}_跌停'].diff().fillna(0).astype(int)
-        if f'{p}_强力' in trend_df.columns:
-            trend_df[f'{p}_强力_diff'] = trend_df[f'{p}_强力'].diff().fillna(0).astype(int)
-        if f'{p}_极弱' in trend_df.columns:
-            trend_df[f'{p}_极弱_diff'] = trend_df[f'{p}_极弱'].diff().fillna(0).astype(int)
+        # 3. 情绪波动维度 (4列)
+        trend_df[f'{p}_涨停_diff'] = trend_df[f'{p}_涨停'].diff().fillna(0).astype(int)
+        trend_df[f'{p}_跌停_diff'] = trend_df[f'{p}_跌停'].diff().fillna(0).astype(int)
+        trend_df[f'{p}_强力_diff'] = trend_df[f'{p}_强力'].diff().fillna(0).astype(int)
+        trend_df[f'{p}_极弱_diff'] = trend_df[f'{p}_极弱'].diff().fillna(0).astype(int)
 
-    return trend_df
+    # 最终列顺序整理（非必须，但有助于对齐）
+    return trend_df.drop(columns=['_raw_date']).reset_index(drop=True)
 
 # --- 3. UI 渲染函数 ---
 
@@ -533,6 +533,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
