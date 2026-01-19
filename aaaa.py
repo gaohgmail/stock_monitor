@@ -404,7 +404,35 @@ def check_password():
 
 import subprocess
 
-
+def trigger_github_action():
+    """通过 GitHub API 远程触发数据抓取任务"""
+    
+    # 从 Secrets 中获取配置
+    token = st.secrets["GITHUB_TOKEN"]
+    owner = st.secrets["GITHUB_USER"]
+    repo = st.secrets["GITHUB_REPO"]
+    
+    url = f"https://api.github.com/repos/{owner}/{repo}/dispatches"
+    
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    
+    # event_type 必须与 .yml 里的 types 保持一致
+    data = {"event_type": "manual_fetch_trigger"}
+    
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        
+        # 204 表示请求成功已接收（但 Action 还在排队/运行中）
+        if response.status_code == 204:
+            st.success("🚀 指令已发出！GitHub 后台机器人已开始抓取。")
+            st.info("提示：请等待约 2 分钟抓取完成后，点击下方的“同步最新数据”按钮查看结果。")
+        else:
+            st.error(f"❌ 触发失败：{response.status_code} - {response.text}")
+    except Exception as e:
+        st.error(f"🌐 连接 GitHub 失败: {e}")
 def run_data_download_script():
     try:
         # 获取当前文件的绝对路径，确保定位到 main.py
@@ -467,7 +495,11 @@ if __name__ == "__main__":
             st.caption(f"📍 当前查看: {target_date_str}")
 
             st.markdown("---")
-            
+            # --- 侧边栏按钮逻辑 ---（取代本地抓取逻辑的，函数名不同）
+            if st.button("🚀 抓取今日 9:25 数据"):
+                # 检查当前是否为工作日/交易时间（可选）
+                trigger_github_action()
+            '''    
             # 按钮 1：执行外部抓取脚本
             if st.button("🚀 抓取今日 9:25 数据", use_container_width=True):
                 with st.spinner("正在远程执行抓取脚本..."):
@@ -478,7 +510,7 @@ if __name__ == "__main__":
                         st.balloons()
                     else:
                         st.error(msg)
-
+            '''
             # 按钮 2：刷新当前显示
             if st.button("🔄 同步最新数据", use_container_width=True):
                 st.cache_data.clear()
@@ -505,6 +537,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
