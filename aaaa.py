@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
 import requests
-
+from concurrent.futures import ThreadPoolExecutor
 # --- 0. Streamlit 页面配置 (必须作为第一个 st 命令) ---
 st.set_page_config(page_title="市场情绪双时段监控", layout="wide")
 
@@ -101,7 +101,8 @@ def process_single_date(d):
         combined.update(res_sp)
         return combined
     except Exception: return None
-
+#@st.cache_data
+@st.cache_data(ttl=20000)
 def get_sentiment_trend_report(date_list: list):
     """生成趋势表，补全所有 49 列指标"""
     with ThreadPoolExecutor(max_workers=6) as executor:
@@ -533,6 +534,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
