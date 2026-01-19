@@ -6,18 +6,9 @@ from .utils import safe_read_csv, clean_dataframe
 
 # 1. 自动判断服务器时区并转换
 def get_beijing_now():
-    # 获取本地系统时间
-    now = datetime.now()
-    # 计算系统时区偏移（秒）
-    # time.timezone 在北京 (UTC+8) 是 -28800
-    local_offset = -time.timezone if time.daylight == 0 else -time.altzone
-    
-    # 如果当前偏移不是 28800（即不是北京时间），则强制转换
-    if local_offset != 28800:
-        # 先转为 UTC，再加 8 小时
-        from datetime import timezone
-        return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
-    return now
+    from datetime import datetime, timedelta, timezone
+    # 直接通过 UTC 强制转北京时间，不需要判断系统时区，也就不用 time 模块了
+    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
 
 def get_trade_dates(count: int = 10) -> list:
     """获取最近的 N 个交易日序列"""
