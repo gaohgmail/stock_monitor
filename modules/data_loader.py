@@ -4,6 +4,21 @@ from typing import Optional, Tuple
 from .config import CALENDAR_PATH, DATA_DIR, CONCEPT_PATH
 from .utils import safe_read_csv, clean_dataframe
 
+# 1. 自动判断服务器时区并转换
+def get_beijing_now():
+    # 获取本地系统时间
+    now = datetime.now()
+    # 计算系统时区偏移（秒）
+    # time.timezone 在北京 (UTC+8) 是 -28800
+    local_offset = -time.timezone if time.daylight == 0 else -time.altzone
+    
+    # 如果当前偏移不是 28800（即不是北京时间），则强制转换
+    if local_offset != 28800:
+        # 先转为 UTC，再加 8 小时
+        from datetime import timezone
+        return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=8)))
+    return now
+
 def get_trade_dates(count: int = 10) -> list:
     """获取最近的 N 个交易日序列"""
     if not CALENDAR_PATH.exists():
@@ -22,14 +37,27 @@ def get_trade_dates(count: int = 10) -> list:
 
     df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
     df = df.dropna(subset=[date_col]).sort_values(date_col)
-
+    
     # 时间判定逻辑
+    '''
     now = datetime.now()
     # 早上 9:00 前取昨天作为参考起点
     if now.hour < 9:
         reference_today = (now - timedelta(days=1)).date()
     else:
         reference_today = now.date()
+
+    from datetime import datetime, timedelta
+    '''
+
+
+    now_bj = get_beijing_now()
+    
+    # 后面的逻辑就稳了
+    if now_bj.hour < 9:
+        reference_today = (now_bj - timedelta(days=1)).date()
+    else:
+        reference_today = now_bj.date()
 
     # 在日历中寻找小于等于参考日期的记录
     valid = df[df[date_col].dt.date <= reference_today]
