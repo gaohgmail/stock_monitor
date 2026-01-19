@@ -8,6 +8,7 @@ import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime
+import requests
 
 # --- 0. Streamlit 页面配置 (必须作为第一个 st 命令) ---
 st.set_page_config(page_title="市场情绪双时段监控", layout="wide")
@@ -537,6 +538,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
