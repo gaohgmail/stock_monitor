@@ -407,7 +407,7 @@ def run_data_download_script():
     try:
         # 假设你的下载脚本叫 download_data.py
         # 建议使用绝对路径，防止找不到文件
-        script_path = os.path.join(os.getcwd(), "竞价收盘联合版.py") 
+        script_path = os.path.join(os.getcwd(), "main.py") #竞价收盘联合版，此处是main
         
         # 执行脚本
         result = subprocess.run(["python", script_path], capture_output=True, text=True)
@@ -496,5 +496,6 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
