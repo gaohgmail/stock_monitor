@@ -21,7 +21,7 @@ import base64
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
+print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 # ==================== 0. 精准计时等待逻辑 ====================
 def wait_until_target_time(target_hour, target_minute, target_second):
     """等待直到北京时间指定时刻"""
@@ -153,6 +153,7 @@ try:
             df_stocks = pd.concat([df_stocks, df_new_clean]).drop_duplicates(subset=['code']).reset_index(drop=True)
             df_stocks.to_csv(STOCK_LIST_PATH, index=False, encoding='utf-8-sig')
             print("✅ 名单更新完成")
+            print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 except Exception as e:
     print(f"⚠️ 名单读取或更新跳过: {e}")
 
@@ -167,6 +168,7 @@ for i in range(3):
         if raw_map:
             df_real = pd.DataFrame(raw_map).T
             print(f"✅ 行情获取成功 (第{i+1}次)")
+            print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             break
     except: time.sleep(2)
 
@@ -183,6 +185,7 @@ for i in range(3):
         if tmp is not None and not tmp.empty:
             df_yest = tmp.drop_duplicates(subset=['股票代码'])
             print(f"✅ {target_q}获取成功 (第{i+1}次)")
+            print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             break
     except: time.sleep(2)
 
@@ -239,11 +242,14 @@ if not df_real_c.empty:
         msg = f"【股票分析】🚀 {curr_date} {suffix}数据已保存\n{stats_msg}\n{storage_msg}"
         print(msg)
         send_dingtalk_msg(msg)
+        print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     else:
         msg = f"【股票分析】ℹ️ 脚本运行完成，但当前时间不在保存时段内。"
         print(msg)
         send_dingtalk_msg(msg)
+        print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 else:
     msg = "【股票分析】⚠️ 未获取到行情数据，请检查网络或代码列表。"
     print(msg)
     send_dingtalk_msg(msg)
+    print(f"⏰ 当前脚本执行时间 (北京): {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
