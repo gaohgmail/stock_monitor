@@ -13,7 +13,8 @@ from datetime import datetime
 st.set_page_config(page_title="市场情绪双时段监控", layout="wide")
 
 # --- 1. 环境与路径设置 ---
-PROJECT_ROOT = "D:/数据处理/测试修改"
+PROJECT_ROOT = Path(__file__).parent.parent
+#PROJECT_ROOT = "D:/数据处理/测试修改"
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
@@ -495,3 +496,4 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
