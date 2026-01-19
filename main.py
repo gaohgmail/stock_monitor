@@ -21,7 +21,7 @@ import base64
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-print(f"⏰ 当前脚本执行时间 (北京): {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"⏰ 当前脚本执行时间 (北京)-计时器前打印时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 # ==================== 0. 精准计时等待逻辑 ====================
 def wait_until_target_time(target_hour, target_minute, target_second):
     """等待直到北京时间指定时刻"""
