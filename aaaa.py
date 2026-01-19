@@ -72,6 +72,7 @@ def analyze_daily_sentiment(df_today: pd.DataFrame, prefix: str = "竞价"):
     return {f"{prefix}_{k}": v for k, v in raw_stats.items()}
 
 #@st.cache_data
+@st.cache_data(ttl=20000)
 def get_sentiment_trend_report(date_list: list):
     """
     批量处理日期序列，生成趋势 DataFrame
@@ -459,7 +460,7 @@ if __name__ == "__main__":
                 "选择看板显示日期", 
                 value=max_date,  # 默认显示最新一天
                 min_value=min_date,
-                #max_value=max_date
+                max_value=max_date
             )
             # 转回字符串用于数据定位
             target_date_str = target_date.strftime('%Y-%m-%d')
@@ -504,6 +505,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
