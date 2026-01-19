@@ -498,20 +498,15 @@ if __name__ == "__main__":
             st.markdown("---")
             # --- 侧边栏按钮逻辑 ---（取代本地抓取逻辑的，函数名不同）
             if st.button("🚀 抓取今日 9:25 数据"):
-                # 检查当前是否为工作日/交易时间（可选）
-                trigger_github_action()
-            '''    
-            # 按钮 1：执行外部抓取脚本
-            if st.button("🚀 抓取今日 9:25 数据", use_container_width=True):
-                with st.spinner("正在远程执行抓取脚本..."):
-                    success, msg = run_data_download_script()
-                    if success:
-                        st.cache_data.clear() # 清理缓存以读取新抓取的文件
-                        st.success(msg)
-                        st.balloons()
-                    else:
-                        st.error(msg)
-            '''
+                with st.spinner("正在通知 GitHub 机器人..."):
+                    # 调用你的触发函数
+                    success = trigger_github_action() 
+                    
+                if success:
+                    st.toast("🚀 指令已发出！", icon="✅") # 使用 toast (右下角弹出，会自动消失)
+                    # 或者使用带有清除逻辑的 rerun
+                    # st.rerun()
+
             # 按钮 2：刷新当前显示
             if st.button("🔄 同步最新数据", use_container_width=True):
                 st.cache_data.clear()
@@ -538,6 +533,7 @@ if __name__ == "__main__":
             render_dashboard(display_df)
         else:
             st.error(f"⚠️ 在记录中未找到 {target_date_str} 的历史数据。")
+
 
 
 
