@@ -45,7 +45,7 @@ from modules.data_loader import get_trade_dates, read_market_data
 from modules.analyzer_market import (
     get_sentiment_trend_report, 
 )
-
+from modules.main_markdown import render_auction_report_tab  # 引入新封装的函数
 # UI 渲染页面 (分模块)
 from modules.ui_sentiment import render_sentiment_dashboard
 from modules.ui_top_stocks import render_top_turnover_page
@@ -79,8 +79,8 @@ if check_password():
         if st.button("🏆 成交榜单", use_container_width=True):
             st.session_state.active_page = "🏆 成交榜单"
             
-        if st.button("🔍 个股诊断", use_container_width=True):
-            st.session_state.active_page = "🔍 个股诊断"
+        if st.button("🚀 竞价深度分析", use_container_width=True):
+            st.session_state.active_page = "🚀 竞价深度分析"
 
         # 增加间距把控制中心压下去
         st.markdown("<br>" * 5, unsafe_allow_html=True)
@@ -118,5 +118,5 @@ if check_password():
         # 渲染成交额榜单页
         render_top_turnover_page(target_date)
 
-    elif st.session_state.active_page == "🔍 个股诊断":
-        st.info("🔍 更多统计维度开发中...")
+    elif st.session_state.active_page == "🚀 竞价深度分析":
+        render_auction_report_tab(selected_date=target_date)
