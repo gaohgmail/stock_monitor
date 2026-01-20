@@ -59,41 +59,64 @@ st.set_page_config(page_title="量化复盘系统", layout="wide")
 
 # 2. 身份校验
 if check_password():
-    # 3. 全局数据加载 (使用缓存)
+    # 3. 全局数据加载
     LOOKBACK_DAYS = 30
     trade_dates = get_trade_dates(LOOKBACK_DAYS)
     report_df = get_sentiment_trend_report(trade_dates)
 
+    # --- A. 初始化页面状态 (确保默认有值) ---
+    if 'active_page' not in st.session_state:
+        st.session_state.active_page = "📈 市场情绪"
+
     # 4. 侧边栏控制
     with st.sidebar:
-        st.title("🎛️ 控制中心")
-        # 日期选择
-        all_dates = pd.to_datetime(report_df['日期']).dt.date
-        target_date = st.date_input("目标日期", value=all_dates.max())
+        st.title("🎯 功能导航")
         
-        # 功能触发
-        if st.button("🚀 触发 GitHub 抓取"):
-            trigger_github_action()
-        if st.button("🔄 同步最新数据"):
-            st.cache_data.clear()
-            st.rerun()
+        # --- B. 导航按钮区 (使用你要求的简洁按钮) ---
+        if st.button("📈 市场情绪", use_container_width=True):
+            st.session_state.active_page = "📈 市场情绪"
+            
+        if st.button("🏆 成交榜单", use_container_width=True):
+            st.session_state.active_page = "🏆 成交榜单"
+            
+        if st.button("🔍 个股诊断", use_container_width=True):
+            st.session_state.active_page = "🔍 个股诊断"
 
-    # 5. 核心：标签页导航
-    tab1, tab2, tab3 = st.tabs(["📈 市场情绪", "🏆 成交榜单", "🔍 个股诊断"])
+        # 增加间距把控制中心压下去
+        st.markdown("<br>" * 5, unsafe_allow_html=True)
+        
+        # --- C. 控制中心 ---
+        with st.expander("⚙️ 控制中心", expanded=True):
+            # 日期选择
+            all_dates = pd.to_datetime(report_df['日期']).dt.date
+            target_date = st.date_input("目标日期", value=all_dates.max())
+            
+            st.markdown("---")
+            # 两个核心功能按钮
+            if st.button("🚀 触发 GitHub 抓取", use_container_width=True):
+                trigger_github_action()
+            if st.button("🔄 同步最新数据", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
 
-    with tab1:
-        # 这里逻辑和原 aaaa.py 一致，只是封装进了函数
-        target_date_str = target_date.strftime('%Y-%m-%d')
+    # =========================================================
+    # 5. 主页面渲染逻辑 (严格保留你的切片逻辑)
+    # =========================================================
+    target_date_str = target_date.strftime('%Y-%m-%d')
+    
+    # 使用 st.session_state.active_page 来判断当前页
+    if st.session_state.active_page == "📈 市场情绪":
         selected_indices = report_df[report_df['日期'] == target_date_str].index.tolist()
         if selected_indices:
+            # 动态切片：从头开始截取到选中日期，保证趋势图完整
             display_df = report_df.loc[:selected_indices[0]]
             render_sentiment_dashboard(display_df)
         else:
-            st.error("未找到该日数据")
+            st.error(f"未找到 {target_date_str} 的分析数据")
 
-    with tab2:
-        # 调用新页面逻辑
+    elif st.session_state.active_page == "🏆 成交榜单":
+        # 渲染成交额榜单页
         render_top_turnover_page(target_date)
 
-    with tab3:
-        st.write("敬请期待：更多统计维度...")
+    elif st.session_state.active_page == "🔍 个股诊断":
+        st.info("🔍 更多统计维度开发中...")
