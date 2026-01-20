@@ -42,7 +42,7 @@ from modules.utils import (
 
 # 数据加载与核心分析逻辑
 from modules.data_loader import get_trade_dates, read_market_data
-from modules.analyzer_market.py import (
+from modules.analyzer_market import (
     get_sentiment_trend_report, 
 )
 
