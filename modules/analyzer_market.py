@@ -45,7 +45,24 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
     # 构造常用布尔掩码
     mask_sh = np.char.startswith(codes, 'sh6')
     mask_cyb = np.char.startswith(codes, 'sz3')
-    mask_not_st = ~np.char.find(np.char.lower(names), 'st') != -1
+# 1. 强化 ST 过滤：涵盖 ST, *ST, SST 以及可能的大小写
+    # NumPy 向量化：先转小写，再查是否存在 'st'
+    names_lower = np.char.lower(names)
+    mask_not_st = (np.char.find(names_lower, 'st') == -1)
+    
+    # 2. 极高精度涨跌停判定 (使用 0.001 避免浮点数漂移误差)
+    # 增加 price > 0 判定，防止停牌股干扰
+    # 1. 极高精度价格判定 (0.001)
+    # 2. 叠加涨跌幅阈值 (大于 9% 或 小于 -9%)
+    is_limit_up = (prices > 0) & (np.abs(prices - limit_up_prices) < 0.001) & (chgs > 9)
+    is_limit_down = (prices > 0) & (np.abs(prices - limit_down_prices) < 0.001) & (chgs < -9)
+
+    # 3. 情绪计数逻辑 (确保仅在 mask_not_st 范围内)
+    m_valid = mask_not_st
+    
+    # 涨停/跌停数统计
+    count_limit_up = np.sum(is_limit_up & m_valid)
+    count_limit_down = np.sum(is_limit_down & m_valid)
     
     # 核心统计计算
     total_amt = np.sum(amts) / 1e8
@@ -63,8 +80,8 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
         '创业额': cyb_amt,
         '强力': np.sum((chgs >= 7) & m_valid),
         '极弱': np.sum((chgs <= -7) & m_valid),
-        '涨停': np.sum((prices > 0) & (np.abs(prices - limit_up_prices) < 0.01) & m_valid),
-        '跌停': np.sum((prices > 0) & (np.abs(prices - limit_down_prices) < 0.01) & m_valid),
+        '涨停': count_limit_up),
+        '跌停': count_limit_down,
         '上涨数': np.sum((chgs > 0) & m_valid),
         '下跌数': np.sum((chgs < 0) & m_valid),
         '沪涨': np.sum((chgs > 0) & m_sh_valid),
