@@ -4,16 +4,6 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from modules.data_loader import read_market_data
 import streamlit as st
-def fast_daily_calc(df: pd.DataFrame, prefix: str):
-    """【宏观】NumPy 向量化计算全市场每日指标"""
-    if df.empty: return {}
-    # ... (此处放你之前的 fast_daily_calc 代码) ...
-    return {f"{prefix}_{k}": v for k, v in res.items()}
-
-def get_sentiment_trend_report(date_list: list):
-    """【趋势】生成 49 列全市场情绪趋势大表"""
-    # ... (此处放你之前的 get_sentiment_trend_report 代码) ...
-    return trend_df
 
 
 def fast_daily_calc(df: pd.DataFrame, prefix: str):
