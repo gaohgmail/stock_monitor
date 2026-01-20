@@ -57,7 +57,7 @@ def render_sentiment_dashboard(df: pd.DataFrame):
         with sc1:
             st.metric("收盘总额", f"{latest['收盘_总额']:.2f} 亿", delta=f"{latest['收盘_资金增减']:.2f} 亿")
         with sc2:
-            repair = latest['收盘_全_场涨跌比'] - latest['竞价_全场涨跌比']
+            repair = latest['收盘_全场涨跌比'] - latest['竞价_全场涨跌比']
             st.metric("收盘涨跌比", f"{latest['收盘_全场涨跌比']:.2f}", delta=f" {repair:.2f}盘中")
         with sc3:
             st.metric("上海涨跌比", f"{latest.get('收盘_上海涨跌比', 0):.2f}", 
