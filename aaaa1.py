@@ -1,4 +1,31 @@
+
+# -*- coding: utf-8 -*-
 # aaaa.py
+import sys
+import os
+import pandas as pd
+import numpy as np
+import streamlit as st
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from datetime import datetime
+import requests
+from concurrent.futures import ThreadPoolExecutor
+# --- 0. Streamlit 页面配置 (必须作为第一个 st 命令) ---
+st.set_page_config(page_title="市场情绪双时段监控", layout="wide")
+
+# --- 1. 环境与路径设置 ---
+#PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+#PROJECT_ROOT = "D:/数据处理/测试修改"
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+# 导入自定义模块
+from modules.config import *
+from modules.utils import Logger, safe_read_csv, standardize_code, clean_dataframe
+from modules.data_loader import get_trade_dates, read_market_data
+from modules.analyzer import build_structure_tags, analyze_auction_flow
 import streamlit as st
 # ... 之前的 import ...
 from modules.ui_sentiment import render_sentiment_dashboard  # 移过去的函数
