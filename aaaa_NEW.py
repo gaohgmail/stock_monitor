@@ -113,7 +113,7 @@ if check_password():
     if page_selection == "📈 市场情绪":
         if not target_row.empty:
             # 调用 ui_sentiment 模块进行渲染
-            render_sentiment_dashboard(target_row)
+            render_sentiment_dashboard(report_df)
         else:
             st.error(f"未找到 {target_date_str} 的分析数据，请尝试同步数据。")
 
