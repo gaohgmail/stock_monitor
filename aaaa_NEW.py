@@ -1,35 +1,60 @@
 
 # -*- coding: utf-8 -*-
 # aaaa_NEW.py
-import sys
+
+# =========================================================
+# 1. 系统与基础库
+# =========================================================
 import os
-import pandas as pd
+import sys
+import datetime
+import requests
 import numpy as np
+import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
+
+# =========================================================
+# 2. Streamlit 与 绘图库
+# =========================================================
 import streamlit as st
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from datetime import datetime
-import requests
-from concurrent.futures import ThreadPoolExecutor
-# --- 0. Streamlit 页面配置 (必须作为第一个 st 命令) ---
-st.set_page_config(page_title="市场情绪双时段监控", layout="wide")
 
-# --- 1. 环境与路径设置 ---
-#PROJECT_ROOT = Path(__file__).parent.parent
+# --- 必须作为第一个 Streamlit 命令 ---
+st.set_page_config(page_title="量化复盘系统", layout="wide")
+
+# =========================================================
+# 3. 项目路径修复 (确保能够正确识别 modules 文件夹)
+# =========================================================
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-#PROJECT_ROOT = "D:/数据处理/测试修改"
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
-# 导入自定义模块
+# =========================================================
+# 4. 导入自定义模块 (从 modules 文件夹)
+# =========================================================
+# 配置与通用工具
 from modules.config import *
-from modules.utils import Logger, safe_read_csv, standardize_code, clean_dataframe
+from modules.utils import (
+    Logger, safe_read_csv, standardize_code, 
+    clean_dataframe, check_password, trigger_github_action
+)
+
+# 数据加载与核心分析逻辑
 from modules.data_loader import get_trade_dates, read_market_data
-from modules.analyzer import build_structure_tags, analyze_auction_flow
-import streamlit as st
-# ... 之前的 import ...
-from modules.ui_sentiment import render_sentiment_dashboard  # 移过去的函数
-from modules.ui_top_stocks import render_top_turnover_page   # 新函数
+from modules.analyzer import (
+    get_sentiment_trend_report, 
+    build_structure_tags, 
+    analyze_auction_flow
+)
+
+# UI 渲染页面 (分模块)
+from modules.ui_sentiment import render_sentiment_dashboard
+from modules.ui_top_stocks import render_top_turnover_page
+
+# =========================================================
+# 5. 后续逻辑开始 (if check_password(): ...)
+# =========================================================
 
 # 1. 页面配置
 st.set_page_config(page_title="量化复盘系统", layout="wide")
