@@ -42,10 +42,8 @@ from modules.utils import (
 
 # 数据加载与核心分析逻辑
 from modules.data_loader import get_trade_dates, read_market_data
-from modules.analyzer import (
+from modules.analyzer_market.py import (
     get_sentiment_trend_report, 
-    build_structure_tags, 
-    analyze_auction_flow
 )
 
 # UI 渲染页面 (分模块)
