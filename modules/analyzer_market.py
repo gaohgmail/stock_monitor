@@ -45,7 +45,7 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
     # 构造常用布尔掩码
     mask_sh = np.char.startswith(codes, 'sh6')
     mask_cyb = np.char.startswith(codes, 'sz3')
-# 1. 强化 ST 过滤：涵盖 ST, *ST, SST 以及可能的大小写
+    # 1. 强化 ST 过滤：涵盖 ST, *ST, SST 以及可能的大小写
     # NumPy 向量化：先转小写，再查是否存在 'st'
     names_lower = np.char.lower(names)
     mask_not_st = (np.char.find(names_lower, 'st') == -1)
