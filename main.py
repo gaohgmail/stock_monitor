@@ -21,30 +21,48 @@ import base64
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-print(f"⏰ 当前脚本执行时间 (北京)-计时器前打印时间: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-# ==================== 0. 精准计时等待逻辑 ====================
+
+
+# ==================== 0. 精准计时等待逻辑 (兼容 UTC/北京时间) ====================
+def get_beijing_time():
+    """无论系统处于什么时区，始终获取精准的北京时间"""
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+
+print(f"⏰ 当前脚本启动时间 (北京): {get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}")
+print(f"⏰ 当前脚本启动时间 (系统本地): {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+
 def wait_until_target_time(target_hour, target_minute, target_second):
     """等待直到北京时间指定时刻"""
-    # 仅在定时任务且是早盘时执行等待
-    if os.environ.get("GITHUB_EVENT_NAME") == "schedule" and target_hour == 9:
+    # 仅在 GitHub 定时任务（schedule）且是早盘时执行等待
+    # 如果你想在本地手动运行时也生效，可以去掉 GITHUB_EVENT_NAME 的判断
+    is_gh_schedule = os.environ.get("GITHUB_EVENT_NAME") == "schedule"
+    
+    if is_gh_schedule and target_hour == 9:
+        print(f"🚀 检测到 GitHub 定时任务，开始精准对时，目标北京时间: {target_hour:02d}:{target_minute:02d}:{target_second:02d}")
         while True:
-            # 获取当前北京时间
-            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-            if now.hour == target_hour and now.minute == target_minute and now.second >= target_second:
-                print(f"⏰ 到达目标时间 {now.strftime('%H:%M:%S')}，开始运行主脚本...")
-                break
-            if now.hour > target_hour or (now.hour == target_hour and now.minute > target_minute):
-                print(f"⏰ 当前时间 {now.strftime('%H:%M:%S')} 已过目标时间，立即开始...")
+            # 获取当前最新的北京时间
+            now_bj = get_beijing_time()
+            
+            # 将当前时间转换为当天总秒数，方便精确对比
+            current_total_seconds = now_bj.hour * 3600 + now_bj.minute * 60 + now_bj.second
+            target_total_seconds = target_hour * 3600 + target_minute * 60 + target_second
+            
+            if current_total_seconds >= target_total_seconds:
+                print(f"⏰ 已到达或错过目标时间 ({now_bj.strftime('%H:%M:%S')})，立即开始运行...")
                 break
             
-            # 每秒检查一次
-            if now.second % 10 == 0:
-                print(f"⏳ 当前北京时间: {now.strftime('%H:%M:%S')}，等待中...")
+            # 每 10 秒打印一次进度
+            if now_bj.second % 10 == 0:
+                remaining = target_total_seconds - current_total_seconds
+                print(f"⏳ 等待中... 当前北京时间: {now_bj.strftime('%H:%M:%S')}，距离对时点还差 {remaining} 秒")
+            
             time.sleep(1)
 
-# 如果是早盘定时任务，执行等待
-now_bj = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
-if now_bj.hour == 9 and now_bj.minute < 25:
+# 获取当前北京时间进行初始逻辑判断
+now_bj_start = get_beijing_time()
+
+# 逻辑：如果是早盘（9:25之前）运行，则进入等待逻辑
+if now_bj_start.hour == 9 and now_bj_start.minute < 25:
     wait_until_target_time(9, 25, 3)
 
 # ==================== 1. 配置与参数 ====================
