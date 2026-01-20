@@ -68,6 +68,7 @@ if check_password():
     # aaaa_NEW.py 核心修改部分
     
     # 4. 侧边栏控制
+# 4. 侧边栏导航控制 [引用仓库逻辑改进]
     with st.sidebar:
         st.title("🎯 功能导航")
         
@@ -78,13 +79,13 @@ if check_password():
             index=0,
             key="navigation"
         )
-    
-        st.markdown("---") # 分割线
+
+        st.markdown("---") 
         
-        # --- B. 原有的控制中心内容移到下方 ---
+        # --- B. 控制中心移到侧边栏底部 ---
         with st.expander("⚙️ 数据控制中心", expanded=True):
             st.write("数据配置")
-            # 日期选择
+            # 日期选择：从 report_df 中获取所有可用日期
             all_dates = pd.to_datetime(report_df['日期']).dt.date
             target_date = st.date_input("目标日期", value=all_dates.max())
             
@@ -97,25 +98,31 @@ if check_password():
                 if st.button("🔄 同步数据", use_container_width=True):
                     st.cache_data.clear()
                     st.rerun()
-    
-        # 侧边栏底部信息
-        st.sidebar.markdown(f"---")
-        st.sidebar.caption(f"⏰ 刷新时间: {datetime.datetime.now().strftime('%H:%M:%S')}")
-    
-    # 5. 核心：根据侧边栏的选择渲染页面
-    # 不再使用 tab1, tab2, tab3 = st.tabs(...)
-    
+
+        st.markdown("---")
+        st.caption(f"⏰ 刷新时间: {datetime.datetime.now().strftime('%H:%M:%S')}")
+
+    # =========================================================
+    # 5. 主界面渲染 (根据侧边栏选择)
+    # =========================================================
+    # 统一转换日期格式用于数据过滤
     target_date_str = target_date.strftime('%Y-%m-%d')
+    # 过滤出选中日期的数据行
     target_row = report_df[report_df['日期'] == target_date_str]
-    
+
     if page_selection == "📈 市场情绪":
         if not target_row.empty:
+            # 调用 ui_sentiment 模块进行渲染
             render_sentiment_dashboard(target_row)
         else:
-            st.error(f"未找到 {target_date_str} 的分析数据")
-    
+            st.error(f"未找到 {target_date_str} 的分析数据，请尝试同步数据。")
+
     elif page_selection == "🏆 成交榜单":
+        # 调用 ui_top_stocks 模块进行渲染
         render_top_turnover_page(target_date)
+
+    elif page_selection == "🔍 个股诊断":
+        st.info("🔍 个股诊断模块正在开发中，敬请期待...")
     
     elif page_selection == "🔍 个股诊断":
         st.info("个股诊断模块开发中...")
