@@ -65,57 +65,57 @@ if check_password():
     report_df = get_sentiment_trend_report(trade_dates)
 
     # 4. 侧边栏控制
-# aaaa_NEW.py 核心修改部分
-
-# 4. 侧边栏控制
-with st.sidebar:
-    st.title("🎯 功能导航")
+    # aaaa_NEW.py 核心修改部分
     
-    # --- A. 页面标签选择放在顶部 ---
-    page_selection = st.radio(
-        "请选择功能模块：",
-        ["📈 市场情绪", "🏆 成交榜单", "🔍 个股诊断"],
-        index=0,
-        key="navigation"
-    )
-
-    st.markdown("---") # 分割线
-    
-    # --- B. 原有的控制中心内容移到下方 ---
-    with st.expander("⚙️ 数据控制中心", expanded=True):
-        st.write("数据配置")
-        # 日期选择
-        all_dates = pd.to_datetime(report_df['日期']).dt.date
-        target_date = st.date_input("目标日期", value=all_dates.max())
+    # 4. 侧边栏控制
+    with st.sidebar:
+        st.title("🎯 功能导航")
         
-        # 功能触发按钮
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🚀 抓取数据", use_container_width=True):
-                trigger_github_action()
-        with col2:
-            if st.button("🔄 同步数据", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
-
-    # 侧边栏底部信息
-    st.sidebar.markdown(f"---")
-    st.sidebar.caption(f"⏰ 刷新时间: {datetime.datetime.now().strftime('%H:%M:%S')}")
-
-# 5. 核心：根据侧边栏的选择渲染页面
-# 不再使用 tab1, tab2, tab3 = st.tabs(...)
-
-target_date_str = target_date.strftime('%Y-%m-%d')
-target_row = report_df[report_df['日期'] == target_date_str]
-
-if page_selection == "📈 市场情绪":
-    if not target_row.empty:
-        render_sentiment_dashboard(target_row)
-    else:
-        st.error(f"未找到 {target_date_str} 的分析数据")
-
-elif page_selection == "🏆 成交榜单":
-    render_top_turnover_page(target_date)
-
-elif page_selection == "🔍 个股诊断":
-    st.info("个股诊断模块开发中...")
+        # --- A. 页面标签选择放在顶部 ---
+        page_selection = st.radio(
+            "请选择功能模块：",
+            ["📈 市场情绪", "🏆 成交榜单", "🔍 个股诊断"],
+            index=0,
+            key="navigation"
+        )
+    
+        st.markdown("---") # 分割线
+        
+        # --- B. 原有的控制中心内容移到下方 ---
+        with st.expander("⚙️ 数据控制中心", expanded=True):
+            st.write("数据配置")
+            # 日期选择
+            all_dates = pd.to_datetime(report_df['日期']).dt.date
+            target_date = st.date_input("目标日期", value=all_dates.max())
+            
+            # 功能触发按钮
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🚀 抓取数据", use_container_width=True):
+                    trigger_github_action()
+            with col2:
+                if st.button("🔄 同步数据", use_container_width=True):
+                    st.cache_data.clear()
+                    st.rerun()
+    
+        # 侧边栏底部信息
+        st.sidebar.markdown(f"---")
+        st.sidebar.caption(f"⏰ 刷新时间: {datetime.datetime.now().strftime('%H:%M:%S')}")
+    
+    # 5. 核心：根据侧边栏的选择渲染页面
+    # 不再使用 tab1, tab2, tab3 = st.tabs(...)
+    
+    target_date_str = target_date.strftime('%Y-%m-%d')
+    target_row = report_df[report_df['日期'] == target_date_str]
+    
+    if page_selection == "📈 市场情绪":
+        if not target_row.empty:
+            render_sentiment_dashboard(target_row)
+        else:
+            st.error(f"未找到 {target_date_str} 的分析数据")
+    
+    elif page_selection == "🏆 成交榜单":
+        render_top_turnover_page(target_date)
+    
+    elif page_selection == "🔍 个股诊断":
+        st.info("个股诊断模块开发中...")
