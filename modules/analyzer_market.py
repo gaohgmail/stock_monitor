@@ -70,7 +70,7 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
         '创业额': cyb_amt,
         '强力': np.sum((chgs >= 7) & m_valid),
         '极弱': np.sum((chgs <= -7) & m_valid),
-        '涨停': count_limit_up),
+        '涨停': count_limit_up,
         '跌停': count_limit_down,
         '上涨数': np.sum((chgs > 0) & m_valid),
         '下跌数': np.sum((chgs < 0) & m_valid),
