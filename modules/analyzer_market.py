@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from modules.data_loader import read_market_data
-
+import streamlit as st
 def fast_daily_calc(df: pd.DataFrame, prefix: str):
     """【宏观】NumPy 向量化计算全市场每日指标"""
     if df.empty: return {}
