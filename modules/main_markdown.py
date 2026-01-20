@@ -95,13 +95,13 @@ def render_auction_report_tab(selected_date=None, prev_date=None):
                 st.success(f"✅ 分析完成！(报告生成时间：{datetime.now().strftime('%H:%M:%S')})")
 
                 # --- 题材亮点区 ---
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.subheader("🔥 热门题材")
-                    st.dataframe(hot_concept_stats, use_container_width=True, height=350)
-                with col2:
-                    st.subheader("🤖 题材挖掘")
-                    st.dataframe(auto_concept_df, use_container_width=True, height=350)
+                tab_hot, tab_auto = st.tabs(["🔥 热门题材统计", "🤖 智能题材挖掘"])
+                
+                with tab_hot:
+                    st.dataframe(hot_concept_stats, use_container_width=True)
+                
+                with tab_auto:
+                    st.dataframe(auto_concept_df, use_container_width=True)
 
                 # --- 完整 Markdown 内容展示 ---
                 st.divider()
