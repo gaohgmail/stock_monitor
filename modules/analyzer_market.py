@@ -4,7 +4,7 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from modules.data_loader import read_market_data
 import streamlit as st
-
+from modules.config import DATA_DIR
 
 def fast_daily_calc(df: pd.DataFrame, prefix: str):
     """
@@ -35,7 +35,7 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
     # 构造常用布尔掩码
     mask_sh = np.char.startswith(codes, 'sh6')
     mask_cyb = np.char.startswith(codes, 'sz3')
-    # 1. 强化 ST 过滤：涵盖 ST, *ST, SST 以及可能的大小写
+# 1. 强化 ST 过滤：涵盖 ST, *ST, SST 以及可能的大小写
     # NumPy 向量化：先转小写，再查是否存在 'st'
     names_lower = np.char.lower(names)
     mask_not_st = (np.char.find(names_lower, 'st') == -1)
@@ -58,6 +58,17 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
     total_amt = np.sum(amts) / 1e8
     sh_amt = np.sum(amts[mask_sh]) / 1e8
     cyb_amt = np.sum(amts[mask_cyb]) / 1e8
+    
+    # 计算前15股票成交额总额及其与市场总额的比例
+    if len(amts) >= 15:
+        # 获取前15大成交额
+        top15_amts = np.partition(amts, -15)[-15:]
+        top15_total = np.sum(top15_amts) / 1e8
+        top15_ratio = top15_total / total_amt if total_amt > 0 else 0
+    else:
+        # 如果股票数量不足15，计算所有股票的成交额
+        top15_total = total_amt
+        top15_ratio = 1.0
 
     # 情绪指标计数 (在 not_st 掩码下计算)
     m_valid = mask_not_st
@@ -68,6 +79,8 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
         '总额': total_amt,
         '上海额': sh_amt,
         '创业额': cyb_amt,
+        '前15总额': top15_total,
+        '前15占比': top15_ratio,
         '强力': np.sum((chgs >= 7) & m_valid),
         '极弱': np.sum((chgs <= -7) & m_valid),
         '涨停': count_limit_up,
@@ -81,6 +94,65 @@ def fast_daily_calc(df: pd.DataFrame, prefix: str):
     }
     return {f"{prefix}_{k}": v for k, v in raw_stats.items()}
 
+def process_index_data(d, prefix):
+    """
+    直接读取原始CSV文件提取指数。
+    d: datetime对象 (项目内部已处理好的时间)
+    prefix: '竞价' 或 '收盘'
+    """
+    # 1. 初始化默认值字典
+    res = {
+        f'{prefix}_上证涨跌幅': 0.0,
+        f'{prefix}_深证涨跌幅': 0.0,
+        f'{prefix}_创业涨跌幅': 0.0
+    }
+
+    try:
+        # 2. 构造原始文件路径 (d已经是时间对象，直接strftime)
+        # 注意：这里确保 DATA_DIR 是 Path 对象，如果是字符串请用 os.path.join
+        file_name = f"{d.strftime('%Y-%m-%d')}_{prefix}指数.csv"
+        file_path = DATA_DIR / file_name
+
+        if not file_path.exists():
+            print(f"⚠️ [DEBUG] 找不到文件: {file_path}")
+            return res
+
+        # 3. 直接读取源文件，不走 standardized_code，保留原始的 sh000001
+        df_raw = pd.DataFrame()
+        for enc in ['gbk', 'utf-8-sig']:
+            try:
+                # 这里不加 dtype=str，让涨跌幅自动识别为浮点数
+                df_raw = pd.read_csv(file_path, encoding=enc)
+                break
+            except:
+                continue
+
+        if df_raw.empty:
+            return res
+
+        # 4. 把读取到的原始 DF 丢到变量浏览器里 (变量名为 df_竞价_raw 或 df_收盘_raw)
+        # 你可以在 Spyder 的变量浏览器里直接看到它
+        globals()[f'df_{prefix}_raw'] = df_raw
+
+        # 5. 建立查找表 (根据你上传的 CSV 列名是 'code' 和 '涨跌(%)')
+        # 强制将 code 转为字符串并去空格
+        df_raw['code'] = df_raw['code'].astype(str).str.strip().str.lower()
+        
+        # 自动识别涨跌幅列名（兼容不同版本的CSV）
+        pct_col = '涨跌(%)' if '涨跌(%)' in df_raw.columns else '涨跌幅'
+        lookup = dict(zip(df_raw['code'], df_raw[pct_col]))
+
+        # 6. 精准填充结果
+        res[f'{prefix}_上证涨跌幅'] = float(lookup.get('sh000001', 0.0))
+        res[f'{prefix}_深证涨跌幅'] = float(lookup.get('sz399001', 0.0))
+        res[f'{prefix}_创业涨跌幅'] = float(lookup.get('sz399006', 0.0))
+        
+        return res
+
+    except Exception as e:
+        print(f"❌ [ERROR] 提取指数失败: {e}")
+        return res
+
 def process_single_date(d):
     """单日处理单元"""
     try:
@@ -91,9 +163,15 @@ def process_single_date(d):
         res_jj = fast_daily_calc(df_jj, prefix="竞价")
         res_sp = fast_daily_calc(df_sp, prefix="收盘")
         
+        # 读取并处理指数数据
+        index_jj = process_index_data(d, "竞价")
+        index_sp = process_index_data(d, "收盘")
+        
         combined = {'日期': d.strftime('%Y-%m-%d'), '_raw_date': d}
         combined.update(res_jj)
         combined.update(res_sp)
+        combined.update(index_jj)
+        combined.update(index_sp)
         return combined
     except Exception: return None
 #@st.cache_data
