@@ -47,7 +47,7 @@ def calculate_top_amount_percentage(df, type_prefix, top_n=15):
     top_amount = df_sorted[amt_col].sum()
     # 返回占比 (0-100) 和 排序后的 DataFrame
     return (top_amount / total_amount) * 100, df_sorted
-
+@st.cache_data
 def analyze_and_plot_top_stocks_trend(today_date, num_days=30):
     """生成 Plotly 趋势图数据和今日详情"""
     all_dates = get_trade_dates(count=30) 
