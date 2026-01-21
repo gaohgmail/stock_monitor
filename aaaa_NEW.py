@@ -82,6 +82,10 @@ if check_password():
         if st.button("🚀 竞价深度分析", use_container_width=True):
             st.session_state.active_page = "🚀 竞价深度分析"
 
+        if st.button("📊 个股趋势分析", use_container_width=True):
+            st.session_state.active_page = "📊 个股趋势分析"
+
+
         # 增加间距把控制中心压下去
         st.markdown("<br>" * 5, unsafe_allow_html=True)
         
@@ -120,3 +124,7 @@ if check_password():
 
     elif st.session_state.active_page == "🚀 竞价深度分析":
         render_auction_report_tab(selected_date=target_date)
+
+    elif st.session_state.active_page == "📊 个股趋势分析":  
+        # target_date 是你侧边栏 date_input 选中的日期
+        display_trend_analysis(target_date)
