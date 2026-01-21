@@ -5,7 +5,8 @@ from typing import Optional, Tuple, Dict, Any, List
 from .data_loader import read_market_data, load_concept_data
 from .utils import clean_dataframe,standardize_code
 from .config import HOT_KEYWORDS, BLACKLIST, HOT_CONCEPT_LIST
-
+import streamlit as st
+@st.cache_data
 def build_structure_tags(today_date: datetime, prev_date: datetime) -> pd.DataFrame:
     """构建昨日形态 + 今日竞价放量 → 结构标签"""
     df_today = read_market_data(today_date, '竞价行情')
