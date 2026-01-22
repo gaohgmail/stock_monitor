@@ -11,6 +11,20 @@ def render_sentiment_dashboard(df: pd.DataFrame):
     专门负责渲染“市场情绪”页面的所有 UI 逻辑
     """
     st.title("📊 市场情绪监控系统 (竞价 vs 收盘)")
+
+    # 保证数据是可写的
+    df = df.copy()
+
+# 2. 物理抹除逻辑
+    for p in ['竞价', '收盘']:
+        # 检查总额是否为 0 或 NaN
+        # 只要总额是 0，就意味着该时段还没发生，把所有相关列的数据全部物理设为 None
+        mask = (df[f'{p}_总额'] <= 0) | (df[f'{p}_总额'].isna())
+        
+        related_cols = [c for c in df.columns if c.startswith(f'{p}_')]
+        
+        # 关键操作：直接设为 None。这在 pandas 中相当于物理抹除了该单元格的数据
+        df.loc[mask, related_cols] = None
     
     if df.empty:
         st.warning("暂无交易数据，请检查数据源。")
