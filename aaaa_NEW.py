@@ -97,17 +97,15 @@ if check_password():
             target_date = st.date_input("目标日期", value=all_dates.max())
             
             st.markdown("---")
-            # 两个核心功能按钮
-            if st.button("🚀 触发 GitHub 抓取", use_container_width=True):
-                trigger_github_action()
-            # 界面按钮
-
-            
-            if st.button("📈 抓取行情数据"):
-                trigger_action("stock_monitor_trigger")
-
-            if st.button("🚀 更新所属概念"):
-                trigger_action("concepts_update_trigger")
+        # 按钮 1：触发更新所属概念 (对应你的 Update Concepts Daily YAML)
+            if st.button("🧬 更新所属概念", use_container_width=True):
+                trigger_action("concepts_update_trigger") # 确保 YAML 里 types 也是这个名字
+                
+            # 按钮 2：触发抓取行情数据 (对应你的 Stock Monitor Task YAML)
+            if st.button("📊 抓取行情数据", use_container_width=True):
+                trigger_action("stock_monitor_trigger") # 确保 YAML 里 types 也是这个名字
+        
+            st.markdown("---")
             if st.button("🔄 同步最新数据", use_container_width=True):
                 st.cache_data.clear()
                 st.rerun()
