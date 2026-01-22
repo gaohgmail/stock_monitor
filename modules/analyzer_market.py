@@ -4,11 +4,11 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 from modules.data_loader import read_market_data
 import streamlit as st
-from modules.config import DATA_DIR
+from modules.config import DATA_DIR, SENTIMENT_TREND_PATH
 
 def fast_daily_calc(df: pd.DataFrame, prefix: str):
     """
-    使用 NumPy 向量化提速计算
+    使用 NumPy 向量化提速计算11
     """
     if df.empty: return {}
 
@@ -177,32 +177,98 @@ def process_single_date(d):
 #@st.cache_data
 @st.cache_data(ttl=20000)
 def get_sentiment_trend_report(date_list: list):
-    """生成趋势表，补全所有 49 列指标"""
-    with ThreadPoolExecutor(max_workers=6) as executor:
-        results = [r for r in executor.map(process_single_date, date_list) if r is not None]
-    
-    if not results: return pd.DataFrame()
-    
-    trend_df = pd.DataFrame(results).sort_values('_raw_date')
+    """一日一行，增量对齐更新逻辑"""
+    # 1. 加载已有数据
+    old_df = pd.DataFrame()
+    if SENTIMENT_TREND_PATH.exists():
+        try:
+            # 读取时确保“日期”列为字符串，防止解析错误
+            old_df = pd.read_csv(SENTIMENT_TREND_PATH, encoding='utf-8-sig', dtype={'日期': str})
+        except Exception as e:
+            st.warning(f"读取旧趋势表失败，将重新计算: {e}")
 
-    # 批量计算衍生指标（确保竞价/收盘各 24 列）
+    # 2. 识别待更新日期 (尚未完成“收盘”数据计算的日期)
+    processed_dates = set()
+    if not old_df.empty and '收盘_总额' in old_df.columns:
+        # 认为如果有“收盘_总额”且大于 0，则该日收盘数据已完整
+        processed_dates = set(old_df[old_df['收盘_总额'] > 0]['日期'].tolist())
+    
+    needed_dates = [d for d in date_list if d.strftime('%Y-%m-%d') not in processed_dates]
+
+    # 3. 执行增量计算
+    new_results = []
+    if needed_dates:
+        with ThreadPoolExecutor(max_workers=6) as executor:
+            new_results = [r for r in executor.map(process_single_date, needed_dates) if r is not None]
+    
+    if not new_results and old_df.empty:
+        return pd.DataFrame()
+
+    # 4. 合并与日期对齐
+    new_df = pd.DataFrame(new_results)
+    if not old_df.empty:
+        # 补全 old_df 的 _raw_date 用于后续排序
+        if '_raw_date' not in old_df.columns:
+            old_df['_raw_date'] = pd.to_datetime(old_df['日期'])
+        combined_df = pd.concat([old_df, new_df], ignore_index=True)
+    else:
+        combined_df = new_df
+
+    # 统一转换 _raw_date 为 pandas datetime 格式，解决 Timestamp 与 date 无法比较的问题
+    combined_df['_raw_date'] = pd.to_datetime(combined_df['_raw_date'])
+
+    # 5. 去重策略：按日期排序，保留最后一条（覆盖上午的“仅竞价”数据）
+    combined_df = combined_df.sort_values('_raw_date').drop_duplicates(subset=['日期'], keep='last')
+
+    # 6. 重新计算所有衍生指标（确保 diff 等计算的连续性）
+    # 将数值列中的 NaN 填充为 0
+    numeric_cols = combined_df.select_dtypes(include=[np.number]).columns
+    combined_df[numeric_cols] = combined_df[numeric_cols].fillna(0)
+
     for p in ['竞价', '收盘']:
-        # 1. 资金维度 (4列)
-        trend_df[f'{p}_资金增减'] = trend_df[f'{p}_总额'].diff()
-        trend_df[f'{p}_增减幅'] = trend_df[f'{p}_总额'].pct_change()
-        trend_df[f'{p}_上海差值'] = trend_df[f'{p}_上海额'].diff()   # 之前漏掉的
-        trend_df[f'{p}_创业差值'] = trend_df[f'{p}_创业额'].diff()   # 之前漏掉的
+        # 确保基础统计列存在
+        for k in ['总额', '上海额', '创业额', '上涨数', '下跌数', '沪涨', '沪跌', '创涨', '创跌', '涨停', '跌停', '强力', '极弱']:
+            col = f"{p}_{k}"
+            if col not in combined_df.columns:
+                combined_df[col] = 0.0
 
-        # 2. 涨跌比维度 (3列)
-        trend_df[f'{p}_全场涨跌比'] = trend_df[f'{p}_上涨数'] / trend_df[f'{p}_下跌数'].replace(0, 1)
-        trend_df[f'{p}_上海涨跌比'] = trend_df[f'{p}_沪涨'] / trend_df[f'{p}_沪跌'].replace(0, 1) # 之前漏掉的
-        trend_df[f'{p}_创业涨跌比'] = trend_df[f'{p}_创涨'] / trend_df[f'{p}_创跌'].replace(0, 1) # 之前漏掉的
+        # 资金维度 (4列)
+        combined_df[f'{p}_资金增减'] = combined_df[f'{p}_总额'].diff()
+        combined_df[f'{p}_增减幅'] = combined_df[f'{p}_总额'].pct_change()
+        combined_df[f'{p}_上海差值'] = combined_df[f'{p}_上海额'].diff()
+        combined_df[f'{p}_创业差值'] = combined_df[f'{p}_创业额'].diff()
 
-        # 3. 情绪波动维度 (4列)
-        trend_df[f'{p}_涨停_diff'] = trend_df[f'{p}_涨停'].diff().fillna(0).astype(int)
-        trend_df[f'{p}_跌停_diff'] = trend_df[f'{p}_跌停'].diff().fillna(0).astype(int)
-        trend_df[f'{p}_强力_diff'] = trend_df[f'{p}_强力'].diff().fillna(0).astype(int)
-        trend_df[f'{p}_极弱_diff'] = trend_df[f'{p}_极弱'].diff().fillna(0).astype(int)
+        # 涨跌比维度 (3列)
+        combined_df[f'{p}_全场涨跌比'] = combined_df[f'{p}_上涨数'] / combined_df[f'{p}_下跌数'].replace(0, 1)
+        combined_df[f'{p}_上海涨跌比'] = combined_df[f'{p}_沪涨'] / combined_df[f'{p}_沪跌'].replace(0, 1)
+        combined_df[f'{p}_创业涨跌比'] = combined_df[f'{p}_创涨'] / combined_df[f'{p}_创跌'].replace(0, 1)
 
-    # 最终列顺序整理（非必须，但有助于对齐）
-    return trend_df.drop(columns=['_raw_date']).reset_index(drop=True)
+        # 情绪波动维度 (4列)
+        combined_df[f'{p}_涨停_diff'] = combined_df[f'{p}_涨停'].diff()
+        combined_df[f'{p}_跌停_diff'] = combined_df[f'{p}_跌停'].diff()
+        combined_df[f'{p}_强力_diff'] = combined_df[f'{p}_强力'].diff()
+        combined_df[f'{p}_极弱_diff'] = combined_df[f'{p}_极弱'].diff()
+
+        # 4. 连续性校验：如果今日或昨日总额为0，则抹平所有衍生变动指标
+        mask = (combined_df[f'{p}_总额'] == 0) | (combined_df[f'{p}_总额'].shift(1) == 0)
+        derived_cols = [
+            f'{p}_资金增减', f'{p}_增减幅', f'{p}_上海差值', f'{p}_创业差值',
+            f'{p}_涨停_diff', f'{p}_跌停_diff', f'{p}_强力_diff', f'{p}_极弱_diff'
+        ]
+        combined_df.loc[mask, derived_cols] = 0
+        
+        # 确保 diff 列为整数类型（在抹平之后转换）
+        for col in [f'{p}_涨停_diff', f'{p}_跌停_diff', f'{p}_强力_diff', f'{p}_极弱_diff']:
+            combined_df[col] = combined_df[col].fillna(0).astype(int)
+
+    # 7. 最终整理、保留4位小数并安全写回
+    final_df = combined_df.drop(columns=['_raw_date']).sort_values('日期').reset_index(drop=True)
+    final_df = final_df.round(4)
+
+    try:
+        SENTIMENT_TREND_PATH.parent.mkdir(parents=True, exist_ok=True)
+        final_df.to_csv(SENTIMENT_TREND_PATH, index=False, encoding='utf-8-sig')
+    except Exception as e:
+        st.error(f"自动保存趋势报告失败: {e}")
+
+    return final_df
