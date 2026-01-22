@@ -294,8 +294,8 @@ def process_and_merge_files():
         if c not in final_df.columns: final_df[c] = ''
     final_df = final_df[cols]
 
-    os.makedirs(os.path.dirname(CONCEPT_OUTPUT_PATH), exist_ok=True)
-    final_df.to_csv(CONCEPT_OUTPUT_PATH, index=False, encoding='utf-8-sig')
+    os.makedirs(os.path.dirname(CONCEPT_PATH), exist_ok=True)
+    final_df.to_csv(CONCEPT_PATH, index=False, encoding='utf-8-sig')
     print(f"✅ 更新成功: {len(final_df)} 条")
 
 if __name__ == '__main__':
@@ -306,4 +306,5 @@ if __name__ == '__main__':
         else:
             sys.exit(1)
     else:
+
         sys.exit(0)
