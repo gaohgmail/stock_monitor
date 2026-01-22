@@ -95,8 +95,10 @@ if check_password():
             # 日期选择
             all_dates = pd.to_datetime(report_df['日期']).dt.date
             target_date = st.date_input("目标日期", value=all_dates.max())
-            
-            st.markdown("---")
+            if st.button("🔄 同步最新数据", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()            
+  
         # 按钮 1：触发更新所属概念 (对应你的 Update Concepts Daily YAML)
             if st.button("🧬 更新所属概念", use_container_width=True):
                 trigger_action("concepts_update_trigger") # 确保 YAML 里 types 也是这个名字
@@ -105,10 +107,8 @@ if check_password():
             if st.button("📊 抓取行情数据", use_container_width=True):
                 trigger_action("stock_monitor_trigger") # 确保 YAML 里 types 也是这个名字
         
-            st.markdown("---")
-            if st.button("🔄 同步最新数据", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
+          
+
 
     # =========================================================
     # 5. 主页面渲染逻辑 (严格保留你的切片逻辑)
