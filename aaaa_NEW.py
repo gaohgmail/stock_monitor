@@ -37,7 +37,7 @@ if PROJECT_ROOT not in sys.path:
 from modules.config import *
 from modules.utils import (
     Logger, safe_read_csv, standardize_code, trigger_action,
-    clean_dataframe, check_password, trigger_github_action
+    clean_dataframe, check_password,
 )
 
 # 数据加载与核心分析逻辑
