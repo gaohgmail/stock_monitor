@@ -6,7 +6,7 @@ on:
     - cron: '30 11 * * *'
   workflow_dispatch: 
   repository_dispatch:
-    types: [manual_fetch_trigger]
+    types: [concepts_update_trigger]
 
 jobs:
   run-update-concepts:
