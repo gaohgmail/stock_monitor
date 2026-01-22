@@ -3,7 +3,7 @@ name: Update Concepts Daily
 on:
   schedule:
     # 北京时间 17:30 (UTC 09:30)
-    - cron: '30 9 * * *'
+    - cron: '30 11 * * *'
   workflow_dispatch: 
   repository_dispatch:
     types: [manual_fetch_trigger]
