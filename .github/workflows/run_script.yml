@@ -8,7 +8,7 @@ on:
     - cron: '05 7 * * 1-5'
   workflow_dispatch: # 支持手动触发
   repository_dispatch: # <--- 核心修改：允许外部 API 触发
-    types: [manual_fetch_trigger] # 自定义触发事件名称
+    types: [stock_monitor_trigger] # 自定义触发事件名称
 
 jobs:
   run-script:
