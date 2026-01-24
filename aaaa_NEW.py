@@ -48,7 +48,7 @@ from modules.analyzer_market import (
 from modules.main_markdown import render_auction_report_tab  # 引入新封装的函数
 from modules.trend_analyzer import display_trend_analysis
 # UI 渲染页面 (分模块)
-from modules.ui_sentiment import render_sentiment_dashboard
+from modules.ui_sentiment_v2 import render_sentiment_dashboard
 from modules.ui_top_stocks import render_top_turnover_page
 
 # =========================================================
