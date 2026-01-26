@@ -49,7 +49,7 @@ jobs:
           # 确保 Python 能找到安装在 --user 目录下的包
           PYTHONPATH: ${{ github.workspace }}:/home/runner/.local/lib/python3.10/site-packages
         # 执行你指定的路径脚本
-        run: python metadata/update_concepts_daily.py
+        run: python update_concepts_daily.py
 
       - name: Commit and push changes
         run: |
