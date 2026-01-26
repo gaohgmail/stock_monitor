@@ -2,8 +2,8 @@ name: Update Concepts Daily
 
 on:
   schedule:
-    # 北京时间 17:30 (UTC 09:30)
-    - cron: '30 11 * * *'
+    # 北京时间 19:43 (UTC 11:43)
+    - cron: '43 11 * * *'
   workflow_dispatch: 
   repository_dispatch:
     types: [concepts_update_trigger]
