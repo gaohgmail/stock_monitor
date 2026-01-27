@@ -41,7 +41,8 @@ def highlight_6_2(row):
             
     return styles
 
-@st.cache_data
+#@st.cache_data
+@st.cache_data(experimental_allow_widgets=True)
 def render_auction_report_tab(selected_date=None, prev_date=None):
     """
     支持外部传入日期，实现与侧边栏联动
