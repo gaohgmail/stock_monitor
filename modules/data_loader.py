@@ -114,4 +114,5 @@ def load_concept_data() -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
     df['code'] = df['code'].astype(str).str.zfill(6)
+    df['code'] = df['code'].apply(standardize_code)
     return df[['code', '所属概念', '所属行业','历史涨停原因类别']].drop_duplicates()
