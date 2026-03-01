@@ -25,12 +25,6 @@ from ui.ui_zhangting import analyze_zhangting_stats, render_zhangting_dashboard,
 from ui.ui_concepts import render_concept_dashboard
 from ui.ui_concept_analysis_deep import render_concept_analysis_deep
 
-# ==================== 2.5 调度器状态显示（可选）====================
-#from tools.scheduler import display_scheduler_status
-#from tools.config import SCHEDULED_JOBS
-
-# 注：调度器现在由 app.py 统一启动，不在 UI 层初始化
-
 
 # ==================== 3. 核心加载逻辑 ====================
 def get_sentiment_data(dates_tuple):
