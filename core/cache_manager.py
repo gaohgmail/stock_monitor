@@ -38,3 +38,4 @@ class CacheManager:
             'count': len(self._cache),
             'keys': list(self._cache.keys())
         }
+
