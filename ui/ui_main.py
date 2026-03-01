@@ -26,19 +26,11 @@ from ui.ui_concepts import render_concept_dashboard
 from ui.ui_concept_analysis_deep import render_concept_analysis_deep
 
 # ==================== 2.5 调度器状态显示（可选）====================
-from tools.scheduler import display_scheduler_status
-from tools.config import SCHEDULED_JOBS
+#from tools.scheduler import display_scheduler_status
+#from tools.config import SCHEDULED_JOBS
 
 # 注：调度器现在由 app.py 统一启动，不在 UI 层初始化
-def get_scheduler_instance():
-    """尝试获取调度器实例（如果正在运行）"""
-    try:
-        from tools.scheduler import get_scheduler_if_running
-        return get_scheduler_if_running()
-    except:
-        return None
 
-scheduler_instance = get_scheduler_instance()
 
 # ==================== 3. 核心加载逻辑 ====================
 def get_sentiment_data(dates_tuple):
@@ -147,24 +139,7 @@ def main():
         
         st.markdown("---")
         
-        # 5. 定时任务监控区（移到最下面）
-        st.subheader("🕙 定时任务监控")
-        # 显示最近一次任务运行的成功/失败状态
-        display_scheduler_status()
-        
-        # 显示各个任务下次预计运行时间（仅在调度器初始化成功时显示）
-        if scheduler_instance is not None:
-            if scheduler_instance is True:
-                # 调度器在其他进程运行
-                st.caption("✅ 调度器正在运行（其他实例）")
-            else:
-                # 调度器在本进程运行
-                for job_id, info in SCHEDULED_JOBS.items():
-                    job = scheduler_instance.get_job(job_id)
-                    if job and job.next_run_time:
-                        st.caption(f"{info['label']} 下次: `{job.next_run_time.strftime('%H:%M:%S')}`")
-        else:
-            st.caption("⏸️ 调度器未运行")
+
 
     # 当前确定的日期和字符串
     target_dt = st.session_state.selected_date
