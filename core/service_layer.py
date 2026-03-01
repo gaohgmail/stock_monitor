@@ -277,40 +277,37 @@ class MarketService:
     # 公共接口 API
     # ------------------------------------------------------------------------
 
-    def get_market_sentiment(self, date_list: List[datetime]) -> pd.DataFrame:
-        """获取市场情绪数据 (一次性读取整个文件到内存，然后查询)"""
-        # 空列表检查：避免无效操作,无日期数据返回空DF
-        if not date_list:
-            return pd.DataFrame()
-        
-        # 1. 检查是否已加载整个情绪数据文件到内存
-        cache_key = "sentiment_full_data"
-        full_data = self.cache.get(cache_key)
-        
-        if full_data is None:
-            # 首次访问，调用原始方法计算数据
-            print(f"📊 首次加载情绪数据...")
-            try:
-                full_data = get_sentiment_trend_report(date_list)
-                print(f"✅ 情绪数据已加载到内存，共 {len(full_data)} 条记录")
-            except Exception as e:
-                print(f"⚠️ 加载情绪数据失败: {e}")
-                full_data = pd.DataFrame()
+    def get_market_sentiment ( self , date_list : List [ datetime ]) -> pd . DataFrame :
+            """获取市场情绪数据 (增加容错校验)"""
+            if not date_list : return pd . DataFrame ()
             
-            self.cache.set(cache_key, full_data)
-        
-        # 2. 从内存中筛选需要的日期数据
-        # 将请求的日期转换为字符串格式
-        date_strs = [d.strftime('%Y-%m-%d') for d in date_list]
-        
-        # 筛选出需要的日期数据（包含边界日期）
-        result = full_data[full_data['日期'].isin(date_strs)].copy()
-        
-        if not result.empty:
-            print(f"⚡ 内存查询: 筛选出 {len(result)} 个日期的数据")
-        else:
-            print(f"⚠️ 内存查询: 未找到指定日期的数据")
+            cache_key = "sentiment_full_data"
+            full_data = self . cache . get ( cache_key )
             
+            if full_data is None :
+                try :
+                    full_data = get_sentiment_trend_report ( date_list )
+                except Exception as e :
+                    print ( f"⚠️ 加载情绪数据失败: { e } " )
+                    full_data = pd . DataFrame ()
+                self . cache . set ( cache_key , full_data )
+    
+            # --- 增加以下容错逻辑 ---
+            if full_data is None or full_data.empty:
+                print("⚠️ 情绪数据为空，无法进行筛选")
+                return pd.DataFrame()
+    
+            if '日期' not in full_data.columns:
+                print(f"❌ 关键错误：数据中缺少 '日期' 列。当前列名: {full_data.columns.tolist()}")
+                # 尝试修复：如果第一列没名字，可能就是日期
+                if full_data.iloc[:, 0].dtype == object: 
+                    full_data.rename(columns={full_data.columns[0]: '日期'}, inplace=True)
+                else:
+                    return pd.DataFrame()
+        # -----------------------
+
+        date_strs = [ d . strftime ( '%Y-%m-%d' ) for d in date_list ]
+        result = full_data [ full_data [ '日期' ]. isin ( date_strs )]. copy ()
         return result
 
     def get_limit_up_data(self, date: datetime, stage: Union[str, MarketStage] = MarketStage.CLOSE) -> DataResult:
@@ -664,4 +661,5 @@ def warmup_cache(dates: List[datetime], verbose: bool = True) -> Dict[str, Any]:
         print(f"❌ 预热过程出错: {e}")
         stats['failed'] += 1
         
+
     return stats
