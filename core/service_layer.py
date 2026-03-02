@@ -306,9 +306,9 @@ class MarketService:
                     return pd.DataFrame()
         # -----------------------
 
-        date_strs = [ d . strftime ( '%Y-%m-%d' ) for d in date_list ]
-        result = full_data [ full_data [ '日期' ]. isin ( date_strs )]. copy ()
-        return result
+            date_strs = [ d . strftime ( '%Y-%m-%d' ) for d in date_list ]
+            result = full_data [ full_data [ '日期' ]. isin ( date_strs )]. copy ()
+            return result
 
     def get_limit_up_data(self, date: datetime, stage: Union[str, MarketStage] = MarketStage.CLOSE) -> DataResult:
         """获取涨停数据"""
@@ -663,3 +663,4 @@ def warmup_cache(dates: List[datetime], verbose: bool = True) -> Dict[str, Any]:
         
 
     return stats
+
