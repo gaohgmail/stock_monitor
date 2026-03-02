@@ -39,10 +39,7 @@ def main():
 
         # 1. 页面导航按钮
         st.subheader("导航")
-        pages = {
-            "📈 市场情绪": "市场情绪",
-            "🏆 个股趋势": "个股趋势"
-        }
+        pages = {"📈 市场情绪": "市场情绪", "🏆 个股趋势": "个股趋势"}
         
         for label, p_name in pages.items():
             if st.button(label, use_container_width=True, 
@@ -86,7 +83,6 @@ def main():
     st.header(f"{page} - {target_dt.strftime('%Y-%m-%d')}")
 
     if page == "市场情绪":
-        # 获取最近40个交易日的数据用于绘图
         valid_dates = [d for d in all_dates if d <= target_dt][-40:]
         df_trend = market_service.get_market_sentiment(list(valid_dates))
         if not df_trend.empty:
@@ -95,7 +91,6 @@ def main():
             st.warning("该日期下暂无情绪数据")
 
     elif page == "个股趋势":
-        # 获取当日Top15数据
         df_top15 = market_service.get_top15_data(target_dt)
         if not df_top15.empty:
             render_top15_dashboard(
